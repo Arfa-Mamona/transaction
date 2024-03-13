@@ -2,6 +2,9 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <iomanip>
+#include <map>
+#include <algorithm>
 using namespace std;
 
 struct Transaction {
@@ -16,9 +19,10 @@ Transaction transactions[MAX_TRANSACTIONS];
 int numTransactions = 0;
 
 bool validateAmount(double amount) {
-    return (amount >= 0 && amount <= 10000);
+    return (amount >= 0 && amount <= 100000);
 }
- //Add Transaction
+
+// Add Transaction
 void addTransaction() {
     if (numTransactions < MAX_TRANSACTIONS) {
         Transaction newTransaction;
@@ -27,12 +31,10 @@ void addTransaction() {
         cin.ignore();
         getline(cin, newTransaction.name);
         
-        cout << "Enter Date (YYYY/MM/DD): ";
-        cin.ignore();
+        cout << "Enter Date (DD/MM/YYYY): ";
         getline(cin, newTransaction.date);
 
         cout << "Enter description(purpose): "; 
-        cin.ignore();
         getline(cin, newTransaction.description);
 		
         cout << "Enter category(Tax,Savings,personal spending): ";
@@ -40,11 +42,11 @@ void addTransaction() {
 
         string amountStr;
         do {
-            cout << "Enter amount (0-10000): ";
+            cout << "Enter amount (0-100000): ";
             getline(cin, amountStr);
             stringstream(amountStr) >> newTransaction.amount;
             if (!validateAmount(newTransaction.amount)) {
-                cout << "Invalid input! Amount must be between 0 and 10000." << endl;
+                cout << "Invalid input! Amount must be between 0 and 100000." << endl;
             }
         } while (!validateAmount(newTransaction.amount));
 
@@ -55,7 +57,7 @@ void addTransaction() {
     }
 }
 
- //Find transaction
+// Find transaction
 void findTransaction(const string& name) {
     bool found = false;
     for (int i = 0; i < numTransactions; ++i) {
@@ -73,8 +75,9 @@ void findTransaction(const string& name) {
     if (!found)
         cout << "Transaction not found." << endl;
 }
- //Display Transaction
-void displayTransactions() {
+
+// Display Transaction
+void displayTransaction() {
     if (numTransactions == 0) {
         cout << "No Transactions found" << endl;
         return;
@@ -87,8 +90,90 @@ void displayTransactions() {
         cout << "Category: " << transactions[i].category << endl;
     }
 }
- //Save Transaction
-void saveTransactions() {
+
+// Calculate Balance
+double calculateBalance() {
+    double balance = 0.0;
+    for (int i = 0; i < numTransactions; ++i) {
+        balance += transactions[i].amount;
+    }
+    return balance;
+}
+// Display Balance
+void displayBalance() {
+    cout << "Current Balance: " << calculateBalance() << endl;
+}
+
+// Display Category Spendings
+void categorySpendings() {
+    map<string, double> categorySpendings;
+
+	// Calculate category-wise spending
+    for (int i = 0; i < numTransactions; ++i) {
+        const Transaction& transaction = transactions[i];
+        categorySpendings[transaction.category] += transaction.amount;
+    }
+
+    // Display category-wise spending using iterators
+    cout << "Category wise spending summary:" << endl;
+    for (map<string, double>::const_iterator it = categorySpendings.begin(); it != categorySpendings.end(); ++it) {
+    cout << it->first << ": " << fixed << setprecision(2) << it->second << endl;
+}
+    }
+
+ //Budget Planning
+void budgetPlanning() {
+    map<string, double> categoryBudgets;
+
+    cout << "Enter budget for each category:" << endl;
+    cout << "Food: ";
+    cin >> categoryBudgets["Food"];
+    cout << "Health: ";
+    cin >> categoryBudgets["Health"];
+    cout << "Utilities: ";
+    cin >> categoryBudgets["Utilities"];
+
+ // Display budgets
+    cout << "Category wise Budgets:" << endl;
+    cout << "Food: " << categoryBudgets["Food"] << endl;
+    cout << "Health: " << categoryBudgets["Health"] << endl;
+    cout << "Utilities: " << categoryBudgets["Utilities"] << endl;
+}
+
+// Save Budgets to File
+void saveBudgets(const map<string, double>& categoryBudgets) {
+    ofstream file("Budgets.txt");
+    if (file.is_open()) {
+        for (map<string, double>::const_iterator it = categoryBudgets.begin(); it != categoryBudgets.end(); ++it) {
+            file << it->first << ": " << it->second << endl;
+        }
+        file.close();
+        cout << "Budgets saved to file." << endl;
+    } else {
+        cout << "Unable to open Budgets file." << endl;
+    }
+}
+
+
+// Load Budgets from File
+void loadBudgets(map<string, double>& categoryBudgets) {
+    ifstream file("Budgets.txt");
+    if (file.is_open()) {
+        string category;
+        double budget;
+        while (file >> category >> budget) {
+            categoryBudgets[category] = budget;
+        }
+        file.close();
+        cout << "Budgets loaded from file." << endl;
+    } else {
+        cout << "No Budgets found." << endl;
+    }
+}
+
+
+// Save Transaction
+void saveTransaction() {
     ofstream file("Transactions.txt");
     if (file.is_open()) {
         for (int i = 0; i < numTransactions; ++i) {
@@ -104,21 +189,23 @@ void saveTransactions() {
         cout << "Unable to open Transactions file." << endl;
     }
 }
- //Update Transaction
+
+// Update Transaction
 void updateTransaction(const string& name) {
     bool recordFound = false;
     for (int i = 0; i < numTransactions; ++i) {
         if (transactions[i].name == name) {
             cout << "Enter new data: " << endl;
             cout << "Name: ";
-            cin >> transactions[i].name;
-            cout << "Date: ";
-            cin >> transactions[i].date;
-            cout << "Description: ";
             cin.ignore();
+            getline(cin, transactions[i].name);
+            cout << "Date: ";
+            getline(cin, transactions[i].date);
+            cout << "Description: ";
             getline(cin, transactions[i].description);
             cout << "Category: ";
             getline(cin, transactions[i].category);
+            
             do {
                 cout << "Enter amount (0-10000): ";
                 cin >> transactions[i].amount;
@@ -136,7 +223,8 @@ void updateTransaction(const string& name) {
         cout << "Record not found." << endl;
     }
 }
- //Delete Transaction
+
+// Delete Transaction
 void deleteTransaction(const string& name) {
     bool found = false;
     for (int i = 0; i < numTransactions; ++i) {
@@ -156,8 +244,9 @@ void deleteTransaction(const string& name) {
         cout << "Transaction not found" << endl;
     }
 }
- //Load Transaction
-void loadTransactions() {
+
+// Load Transaction
+void loadTransaction() {
     ifstream file("Transactions.txt");
     if (file.is_open()) {
         while (numTransactions < MAX_TRANSACTIONS &&
@@ -176,20 +265,28 @@ void loadTransactions() {
     }
 }
 
-int main() {
-    loadTransactions();
 
-    char choice;
+int main() {
+    loadTransaction();
+
+     char choice;
     string name;
+    map<string, double> categoryBudgets;
+    loadBudgets(categoryBudgets); 
+    
     do {
         cout << "\nChoose an option:" << endl;
+        cout << "--------------------" << endl;
         cout << "1. Add Transaction" << endl;
         cout << "2. Find Transaction by name" << endl;
-        cout << "3. Display all Transactions" << endl;
-        cout << "4. Save Transactions to file" << endl;
+        cout << "3. Display all Transaction" << endl;
+        cout << "4. Save Transaction to file" << endl;
         cout << "5. Update Transaction" << endl;
         cout << "6. Delete Transaction by name" << endl;
-        cout << "7. Exit" << endl;
+        cout << "7. Budget Planning" << endl;
+        cout << "8. Display Category-wise Spending" << endl;
+        cout << "9. Calculate Balance and Display Balance" << endl;
+        cout << "10. Exit" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
 
@@ -199,32 +296,43 @@ int main() {
             break;
         case '2':
             cout << "Enter name to find Transaction: ";
-            cin >> name;
+            cin.ignore();
+            getline(cin, name);
             findTransaction(name);
             break;
         case '3':
-            displayTransactions();
+            displayTransaction();
             break;
         case '4':
-            saveTransactions();
+            saveTransaction();
             break;
         case '5':
             cout << "Enter name to update Transaction: ";
-            cin >> name;
+            cin.ignore();
+            getline(cin, name);
             updateTransaction(name);
             break;
         case '6':
             cout << "Enter name to delete Transaction: ";
-            cin >> name;
+            cin.ignore();
+            getline(cin, name);
             deleteTransaction(name);
             break;
-        case '7':
+         case '7':
+            budgetPlanning();
+            break;
+        case '8':
+            categorySpendings();
+            break;
+        case '9':
+            displayBalance();
+            break;
+        case '10':
             cout << "Exiting program." << endl;
             break;
         default:
             cout << "Invalid choice. Please try again." << endl;
         }
-    } while (choice != '7');
+    } while (choice != '11');
     return 0;
 }
-
